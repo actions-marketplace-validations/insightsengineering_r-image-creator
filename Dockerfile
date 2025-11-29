@@ -1,7 +1,8 @@
 # Build arguments
-ARG BASE_IMAGE="rocker/rstudio:4.3.0"
+ARG BASE_IMAGE="rocker/rstudio:4.3.1"
 
 # Fetch base image
+# hadolint ignore=DL3006
 FROM $BASE_IMAGE
 
 # Build arguments
@@ -9,6 +10,8 @@ ARG SYSDEPS=""
 ARG RENV_LOCK=""
 ARG OTHER_PKG=""
 ARG REPOS=""
+ARG RENV_VERSION="1.0.3"
+ARG DESCRIPTION=""
 
 # Set image metadata
 LABEL org.opencontainers.image.licenses="GPL-2.0-or-later" \
@@ -19,20 +22,13 @@ LABEL org.opencontainers.image.licenses="GPL-2.0-or-later" \
 # Set working directory
 WORKDIR /workspace
 
-# Copy installation scripts
-COPY --chmod=0755 ./scripts /scripts
+# copy all content
+COPY . /workspace/
+RUN find /workspace/ -name "*.sh" -type f -exec chmod 755 {} \;
 
-# Copy of RENV_LOCK (conditionnal because this might be also a direct URL)
-COPY ./renv.lock /workspace
-
-# Install all script
-RUN /scripts/install_all.sh ${SYSDEPS} ${RENV_LOCK} ${OTHER_PKG} ${REPOS}
-
-# delete scripts folder
-RUN rm -rf /scripts
-
-# add env variable DOCKER_CONTAINER_CONTEXT
-ENV DOCKER_CONTAINER_CONTEXT="true"
+# Install everything
+RUN /workspace/scripts/install_all.sh ${SYSDEPS} ${RENV_LOCK} ${REPOS} ${OTHER_PKG} ${RENV_VERSION} ${DESCRIPTION} && \
+    rm -rf /scripts
 
 # Run RStudio
 CMD ["/init"]
